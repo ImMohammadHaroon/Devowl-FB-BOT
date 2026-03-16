@@ -105,16 +105,14 @@ ipcMain.handle('facebook-login', async () => {
     if (loggedIn) {
       await saveCookies(page);
       sendLog('success', 'Facebook session saved successfully!');
-      await closeBrowser();
+      // Do NOT close browser — keep Chrome open for user review
       return { success: true };
     } else {
       sendLog('error', 'Login timed out. Please try again.');
-      await closeBrowser();
       return { success: false, error: 'Login timed out' };
     }
   } catch (err) {
     sendLog('error', `Login error: ${err.message}`);
-    await closeBrowser();
     return { success: false, error: err.message };
   }
 });
@@ -194,7 +192,7 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', async () => {
-  await closeBrowser();
+  // Do NOT close Chrome — leave the browser and all tabs open for the user.
   app.quit();
 });
 

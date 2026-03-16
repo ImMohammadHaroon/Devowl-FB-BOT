@@ -1,4 +1,4 @@
-const { launchBrowser, closeBrowser } = require('./browser');
+const { launchBrowser } = require('./browser');
 const { loadCookies } = require('./cookieManager');
 const fs = require('fs');
 
@@ -36,7 +36,7 @@ async function runAutomation(listings, settings, callbacks) {
   const cookiesLoaded = await loadCookies(page);
   if (!cookiesLoaded) {
     onLog('error', 'No saved session found. Please login to Facebook first.');
-    await closeBrowser();
+    // Browser left open intentionally
     return;
   }
 
@@ -47,7 +47,7 @@ async function runAutomation(listings, settings, callbacks) {
   const isLoggedIn = cookies.some((c) => c.name === 'c_user');
   if (!isLoggedIn) {
     onLog('error', 'Session expired. Please login to Facebook again.');
-    await closeBrowser();
+    // Browser left open intentionally
     return;
   }
   onLog('success', 'Facebook session verified!');

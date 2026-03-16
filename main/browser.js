@@ -10,31 +10,67 @@ let ownsBrowser = false;
 const REMOTE_DEBUGGING_PORT = 9222;
 
 function getWindowsBrowserCandidates() {
-  return [
-    'C:\Program Files\Google\Chrome\Application\chrome.exe',
-    'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe',
+  const localAppData = process.env.LOCALAPPDATA;
+  const paths = [
+    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
   ];
+  
+  if (localAppData) {
+    paths.push(`${localAppData}\\Google\\Chrome\\Application\\chrome.exe`);
+  }
+  
+  return paths;
 }
 
 function getChromeLaunchOptions() {
-  const localAppData = process.env.LOCALAPPDATA;
-  if (!localAppData) return null;
+  const localAppData = process.env.LOCALAPPDATA || 'C:\\Users\\devowl\\AppData\\Local';
+  const userDataDirCandidates = [
+    path.join(localAppData, 'Google', 'Chrome', 'User Data'),
+    'C:\\Users\\devowl\\AppData\\Local\\Google\\Chrome\\User Data'
+  ];
 
-  const userDataDir = path.join(localAppData, 'Google', 'Chrome', 'User Data');
-  if (!fs.existsSync(userDataDir)) return null;
-
-  for (const executablePath of getWindowsBrowserCandidates()) {
-    if (!fs.existsSync(executablePath)) continue;
-
-    return {
-      executablePath,
-      label: `Google Chrome main profile (${executablePath})`,
-      userDataDir,
-      profileDirectory: getLastUsedProfileDirectory(userDataDir),
-    };
+  let mainUserDataDir = null;
+  for (const dir of userDataDirCandidates) {
+    if (fs.existsSync(dir)) {
+      mainUserDataDir = dir;
+      break;
+    }
   }
 
-  return null;
+  // Find Chrome exe
+  let executablePath = null;
+  for (const cand of getWindowsBrowserCandidates()) {
+    if (fs.existsSync(cand)) {
+      executablePath = cand;
+      break;
+    }
+  }
+
+  if (!executablePath) return null;
+
+  const options = [];
+  
+  // Option 1: Try main profile if it exists
+  if (mainUserDataDir) {
+    options.push({
+      executablePath,
+      label: `Google Chrome main profile`,
+      userDataDir: mainUserDataDir,
+      profileDirectory: getLastUsedProfileDirectory(mainUserDataDir),
+    });
+  }
+
+  // Option 2: Fallback to a dedicated bot profile so it NEVER fails due to locked files
+  const botProfileDir = path.join(localAppData, 'Facebook-Bot-Chrome-Profile');
+  options.push({
+    executablePath,
+    label: `Google Chrome bot profile`,
+    userDataDir: botProfileDir,
+    profileDirectory: 'Default',
+  });
+
+  return options;
 }
 
 function getLastUsedProfileDirectory(userDataDir) {
@@ -123,43 +159,48 @@ async function launchBrowser(headless = false) {
 
   let lastError = null;
   if (!browser) {
-    const launchOptions = getChromeLaunchOptions();
-    if (!launchOptions) {
-      throw new Error('Google Chrome is not installed or the Chrome user data directory was not found.');
+    const launchOptionsList = getChromeLaunchOptions();
+    if (!launchOptionsList || launchOptionsList.length === 0) {
+      throw new Error('Google Chrome is not installed.');
     }
 
-    try {
-      const launchArgs = [
-        '--start-maximized',
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-blink-features=AutomationControlled',
-        `--remote-debugging-port=${REMOTE_DEBUGGING_PORT}`,
-      ];
+    // Try starting Chrome, if one profile is locked, try the next
+    for (const launchOptions of launchOptionsList) {
+      try {
+        const launchArgs = [
+          '--start-maximized',
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-blink-features=AutomationControlled',
+          `--remote-debugging-port=${REMOTE_DEBUGGING_PORT}`,
+        ];
 
-      if (launchOptions.profileDirectory) {
-        launchArgs.push(`--profile-directory=${launchOptions.profileDirectory}`);
+        if (launchOptions.profileDirectory) {
+          launchArgs.push(`--profile-directory=${launchOptions.profileDirectory}`);
+        }
+
+        browser = await puppeteer.launch({
+          headless: false,
+          executablePath: launchOptions.executablePath,
+          userDataDir: launchOptions.userDataDir,
+          defaultViewport: null,
+          args: launchArgs,
+          ignoreDefaultArgs: ['--enable-automation'],
+        });
+        
+        ownsBrowser = true;
+        break; // Sucessfully launched!
+      } catch (error) {
+        lastError = new Error(`Launch failed with ${launchOptions.label}: ${error.message}`);
+        browser = null;
+        ownsBrowser = false;
       }
-
-      browser = await puppeteer.launch({
-        headless: false,
-        executablePath: launchOptions.executablePath,
-        userDataDir: launchOptions.userDataDir,
-        defaultViewport: null,
-        args: launchArgs,
-        ignoreDefaultArgs: ['--enable-automation'],
-      });
-      ownsBrowser = true;
-    } catch (error) {
-      lastError = new Error(`Launch failed with ${launchOptions.label}: ${error.message}`);
-      browser = null;
-      ownsBrowser = false;
     }
   }
 
   if (!browser) {
     throw new Error(
-      `${lastError?.message || 'Unable to use Google Chrome.'} To work on your old Chrome profile, either close Chrome completely and retry, or start Chrome with --remote-debugging-port=${REMOTE_DEBUGGING_PORT} and then run the bot.`
+      `${lastError?.message || 'Unable to use Google Chrome.'} Please close all open Chrome windows and try again.`
     );
   }
 
@@ -179,17 +220,18 @@ async function launchBrowser(headless = false) {
   return page;
 }
 
+/**
+ * Disconnect puppeteer from the browser WITHOUT closing Chrome.
+ * Tabs and the Chrome window remain open for the user to review.
+ */
 async function closeBrowser() {
   try {
     if (browser) {
-      if (ownsBrowser) {
-        await browser.close();
-      } else {
-        browser.disconnect();
-      }
+      // Always disconnect — never close Chrome so tabs stay open.
+      browser.disconnect();
     }
   } catch {
-    // Ignore close errors
+    // Ignore disconnect errors
   }
   browser = null;
   page = null;
