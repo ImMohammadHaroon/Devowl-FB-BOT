@@ -1,0 +1,140 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body, html {
+  width: 100%;
+  height: 100%;
+  background-color: #0f0f0f;
+  color: #eeeeee;
+  overflow: hidden;
+  user-select: none;
+}
+
+.activation-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  padding: 24px;
+  animation: fadeIn 0.4s ease-out;
+  -webkit-app-region: drag;
+}
+
+.activation-card {
+  width: 100%;
+  max-width: 380px;
+  background: #1a1a1a;
+  border-radius: 8px;
+  padding: 32px 24px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  border: 1px solid #333;
+  text-align: center;
+  -webkit-app-region: no-drag;
+}
+
+.activation-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: #ffffff;
+}
+
+.activation-subtitle {
+  font-size: 14px;
+  color: #aaaaaa;
+  margin-bottom: 24px;
+}
+
+.activation-input {
+  width: 100%;
+  padding: 12px;
+  font-size: 18px;
+  font-family: monospace;
+  text-align: center;
+  background: #252525;
+  border: 1px solid #444;
+  color: #ffffff;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  outline: none;
+  transition: border-color 0.2s;
+  letter-spacing: 2px;
+}
+
+.activation-input:focus {
+  border-color: #007bff;
+}
+
+.activation-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.activation-button {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.activation-button:hover:not(:disabled) {
+  background: #0056b3;
+}
+
+.activation-button:disabled {
+  background: #444;
+  color: #888;
+  cursor: not-allowed;
+}
+
+.activation-status {
+  margin-top: 16px;
+  font-size: 14px;
+  min-height: 20px;
+}
+
+.status-error {
+  color: #ff4d4d;
+}
+
+.status-success {
+  color: #00cc66;
+}
+
+.activation-footer {
+  margin-top: 24px;
+  font-size: 12px;
+  color: #777;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
