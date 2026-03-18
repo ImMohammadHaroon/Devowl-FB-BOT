@@ -1,7 +1,7 @@
 import React from 'react';
 import { FiClock, FiShuffle, FiLogIn, FiShield, FiActivity } from 'react-icons/fi';
 
-export default function Settings({ settings, setSettings, isLoggedIn, onLogin }) {
+export default function Settings({ settings, setSettings, isLoggedIn, onLogin, onLogout }) {
   const handleDelayChange = (value) => {
     setSettings((prev) => ({ ...prev, postDelay: parseInt(value) }));
   };
@@ -99,13 +99,25 @@ export default function Settings({ settings, setSettings, isLoggedIn, onLogin })
                   : 'Click the button to open a browser and login manually.'}
               </div>
             </div>
-            <button
-              className={`btn ${isLoggedIn ? 'btn-success' : 'btn-primary'}`}
-              onClick={onLogin}
-            >
-              <FiLogIn style={{ marginRight: '6px' }} />
-              {isLoggedIn ? 'Re-Login' : 'Login to Facebook'}
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                className={`btn ${isLoggedIn ? 'btn-success' : 'btn-primary'}`}
+                onClick={onLogin}
+              >
+                <FiLogIn style={{ marginRight: '6px' }} />
+                {isLoggedIn ? 'Re-Login' : 'Login to Facebook'}
+              </button>
+              {isLoggedIn && (
+                <button
+                  className="btn"
+                  onClick={onLogout}
+                  style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)' }}
+                >
+                  <FiLogIn style={{ marginRight: '6px', transform: 'rotate(180deg)', display: 'inline-block' }} />
+                  Logout
+                </button>
+              )}
+            </div>
           </div>
         </div>
 

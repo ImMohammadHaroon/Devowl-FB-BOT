@@ -6,6 +6,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   maximize: () => ipcRenderer.send('window-maximize'),
   close: () => ipcRenderer.send('window-close'),
 
+  // License Activation
+  checkLicense: () => ipcRenderer.invoke('license:check'),
+  activateLicense: (key) => ipcRenderer.invoke('license:activate', key),
+  openMain: () => ipcRenderer.invoke('license:open-main'),
+
   // CSV Export/Import functionality removed
 
   // Images
@@ -14,6 +19,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Session
   checkSession: () => ipcRenderer.invoke('check-session'),
   facebookLogin: () => ipcRenderer.invoke('facebook-login'),
+  facebookLogout: () => ipcRenderer.invoke('facebook-logout'),
 
   // Bot controls
   startBot: (data) => ipcRenderer.invoke('start-bot', data),

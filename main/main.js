@@ -3,9 +3,9 @@ const path = require('path');
 const fs = require('fs');
 const { launchBrowser, closeBrowser, getPage } = require('./browser');
 const { PATHS, ensureDirs } = require('./paths');
-const { saveCookies, loadCookies, hasSavedSession } = require('./cookieManager');
+const { saveCookies, loadCookies, hasSavedSession, clearCookies } = require('./cookieManager');
 const { runAutomation, stopAutomation, pauseAutomation, resumeAutomation } = require('./automation');
-// CSV parser removed
+const { isLicenseValid, validateAndActivateKey } = require('./licenseManager');
 
 let mainWindow;
 let botState = {
@@ -43,6 +43,36 @@ function createWindow() {
   });
 }
 
+let activationWindow;
+
+function createActivationWindow() {
+  activationWindow = new BrowserWindow({
+    width: 420,
+    height: 280,
+    resizable: false,
+    frame: false,
+    center: true,
+    alwaysOnTop: true,
+    backgroundColor: '#0f0f0f',
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js'),
+    },
+    icon: path.join(__dirname, '..', 'assets', 'icon.ico'),
+  });
+
+  if (isDev) {
+    activationWindow.loadURL('http://localhost:5173/activation.html');
+  } else {
+    activationWindow.loadFile(path.join(__dirname, '..', 'dist', 'renderer', 'activation.html'));
+  }
+
+  activationWindow.on('closed', () => {
+    activationWindow = null;
+  });
+}
+
 // ─── Window Controls ───
 ipcMain.on('window-minimize', () => mainWindow?.minimize());
 ipcMain.on('window-maximize', () => {
@@ -50,6 +80,22 @@ ipcMain.on('window-maximize', () => {
   else mainWindow?.maximize();
 });
 ipcMain.on('window-close', () => mainWindow?.close());
+
+// ─── License Keys ───
+ipcMain.handle('license:check', () => {
+  return isLicenseValid();
+});
+
+ipcMain.handle('license:activate', (event, key) => {
+  return validateAndActivateKey(key);
+});
+
+ipcMain.handle('license:open-main', () => {
+  if (activationWindow) {
+    activationWindow.close();
+  }
+  createWindow();
+});
 
 // ─── CSV Import removed ───
 
@@ -78,6 +124,12 @@ ipcMain.handle('import-images', async () => {
 // ─── Cookie / Login ───
 ipcMain.handle('check-session', async () => {
   return hasSavedSession();
+});
+
+ipcMain.handle('facebook-logout', async () => {
+  clearCookies();
+  sendLog('info', 'Logged out from Facebook successfully.');
+  return { success: true };
 });
 
 ipcMain.handle('facebook-login', async () => {
@@ -188,7 +240,12 @@ function sendLog(level, message) {
 // ─── App Lifecycle ───
 app.whenReady().then(() => {
   ensureDirs();
-  createWindow();
+  const licenseCheck = isLicenseValid();
+  if (licenseCheck.valid) {
+    createWindow();
+  } else {
+    createActivationWindow();
+  }
 });
 
 app.on('window-all-closed', async () => {
@@ -197,5 +254,9 @@ app.on('window-all-closed', async () => {
 });
 
 app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  if (BrowserWindow.getAllWindows().length === 0) {
+    const licenseCheck = isLicenseValid();
+    if (licenseCheck.valid) createWindow();
+    else createActivationWindow();
+  }
 });

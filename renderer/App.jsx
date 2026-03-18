@@ -109,6 +109,14 @@ export default function App() {
     }
   };
 
+  const handleLogout = async () => {
+    addLog('info', 'Logging out from Facebook...');
+    const result = await window.electronAPI?.facebookLogout();
+    if (result?.success) {
+      setIsLoggedIn(false);
+    }
+  };
+
   const stats = {
     total: listings.length,
     posted: listings.filter((l) => l.status === 'Posted').length,
@@ -140,6 +148,7 @@ export default function App() {
             setSettings={setSettings}
             isLoggedIn={isLoggedIn}
             onLogin={handleLogin}
+            onLogout={handleLogout}
           />
         );
       case 'logs':

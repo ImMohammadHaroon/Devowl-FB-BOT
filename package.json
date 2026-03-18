@@ -1,6 +1,6 @@
 {
   "name": "facebook-marketplace-bot",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Facebook Marketplace Auto Poster Desktop App",
   "main": "main/main.js",
   "scripts": {
@@ -12,6 +12,10 @@
   },
   "dependencies": {
     "csv-parse": "^5.5.6",
+<<<<<<< HEAD
+    "node-machine-id": "^1.1.12",
+=======
+>>>>>>> cdb01a4f5527bbcab976b165100aefc0f4b3e45d
     "ps-node": "^0.1.6",
     "puppeteer": "^22.6.0"
   },
@@ -34,7 +38,6 @@
     },
     "win": {
       "target": "nsis",
-      "icon": "assets/icon.ico",
       "signAndEditExecutable": false
     },
     "nsis": {
